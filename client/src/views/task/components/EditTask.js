@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { useNavigate } from "react-router-dom";
 import * as Yup from "yup";
@@ -31,11 +31,26 @@ const EditTask = ({ taskId, onClose }) => {
     thumbnailImage: null,
   });
 
-  const [imagePreview, setImagePreview] = useState(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState(null);
+  const [, setImagePreview] = useState(null);
+  const [, setThumbnailPreview] = useState(null);
 
-  const getBlogDetailById = async () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+
+  const toInputDate = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (isNaN(date)) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const getBlogDetailById = useCallback(async () => {
     try {
+      setIsLoading(true);
+      setFetchError(null);
       const resp = await getSingleTaskDetail(taskId);
 
       console.log("getSingleBlogDetail", resp);
@@ -45,22 +60,28 @@ const EditTask = ({ taskId, onClose }) => {
           author: resp?.data?.author || "",
           content: resp?.data?.content || "",
           // readTime: resp?.data?.readTime || "",
-          publishedDate: resp?.data?.publishedDate || "",
+          publishedDate: toInputDate(resp?.data?.publishedDate) || "",
           // image: resp?.data?.image || "",
           // thumbnailImage: resp?.data?.thumbnailImage || "",
         });
+      } else {
+        setFetchError("Unable to load task details.");
+        toast.error("Unable to load task details.");
       }
     } catch (err) {
       console.log("err", err);
+      setFetchError(err?.message || "Failed to load task details.");
+      toast.error(err?.message || "Failed to load task details.");
     } finally {
+      setIsLoading(false);
     }
-  };
+  }, [taskId]);
 
   useEffect(() => {
     if (taskId) {
       getBlogDetailById();
     }
-  }, [taskId]);
+  }, [getBlogDetailById]);
 
   // const handleImageChange = (e, setFieldValue, setPreview) => {
   //   const file = e.currentTarget.files[0];
@@ -96,16 +117,25 @@ const EditTask = ({ taskId, onClose }) => {
 
       const payload = {
         ...values,
-        publishedDate: values.publishedDate,
+        title: values.title?.trim() || "",
+        content: values.content?.trim() || "",
+        author: values.author?.trim() || "",
+        publishedDate: values.publishedDate
+          ? new Date(values.publishedDate).toISOString()
+          : null,
         // image: uploadedImage,
         // thumbnailImage: uploadedThumbnail,
       };
 
       const resp = await editTask(taskId, payload);
       if (resp?.success) {
-        toast.success(resp?.message || "Task Edited successfully!");
+        toast.success(resp?.message || "Task edited successfully!");
         resetForm();
-        navigate(-1);
+        if (onClose) {
+          onClose();
+        } else {
+          navigate(-1);
+        }
       } else {
         toast.error("Something went wrong. Please try again.");
       }
@@ -118,7 +148,13 @@ const EditTask = ({ taskId, onClose }) => {
 
   return (
     <div className="container  p-4 ">
-      <h1 className="text-3xl font-bold mb-6">Edit Blog</h1>
+      <h1 className="text-3xl font-bold mb-6">Edit Task</h1>
+      {isLoading && !fetchError && (
+        <div className="mb-4 text-gray-600 text-sm">Loading task...</div>
+      )}
+      {fetchError && (
+        <div className="mb-4 text-red-600 text-sm">{fetchError}</div>
+      )}
 
       <Formik
         enableReinitialize
@@ -138,6 +174,7 @@ const EditTask = ({ taskId, onClose }) => {
                 name="title"
                 placeholder="Enter blog title"
                 className="w-full border rounded p-2 outline-none focus:ring-2 focus:ring-blue-400"
+                disabled={isSubmitting || isLoading}
               />
               <ErrorMessage
                 name="title"
@@ -158,6 +195,7 @@ const EditTask = ({ taskId, onClose }) => {
                 rows="6"
                 placeholder="Write blog content"
                 className="w-full border rounded p-2 resize-y"
+                disabled={isSubmitting || isLoading}
               />
               <ErrorMessage
                 name="content"
@@ -179,6 +217,7 @@ const EditTask = ({ taskId, onClose }) => {
                 name="publishedDate"
                 type="date"
                 className="w-full border rounded p-2 outline-none focus:ring-2 focus:ring-blue-400"
+                disabled={isSubmitting || isLoading}
               />
               <ErrorMessage
                 name="publishedDate"
@@ -255,6 +294,7 @@ const EditTask = ({ taskId, onClose }) => {
                 name="author"
                 placeholder="Enter author name"
                 className="w-full border rounded p-2 outline-none focus:ring-2 focus:ring-blue-400"
+                disabled={isSubmitting || isLoading}
               />
               <ErrorMessage
                 name="author"
@@ -269,18 +309,29 @@ const EditTask = ({ taskId, onClose }) => {
                 type="button"
                 onClick={() => {
                   // Reset form to initialValues after fetch
-                  resetForm({ values: initialValues });
+                  resetForm();
+                  setImagePreview(null);
+                  setThumbnailPreview(null);
                 }}
                 className="px-4 py-2 border rounded hover:bg-gray-100"
+                disabled={isSubmitting || isLoading}
               >
                 Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => (onClose ? onClose() : navigate(-1))}
+                className="px-4 py-2 border rounded hover:bg-gray-100"
+                disabled={isSubmitting || isLoading}
+              >
+                Cancel
               </button>
               <div className="flex ">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isLoading}
                   className={`bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition ${
-                    isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                    isSubmitting || isLoading ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
                   {isSubmitting ? "Editing..." : "Edit Task"}
