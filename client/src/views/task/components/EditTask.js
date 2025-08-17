@@ -1,27 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import { Formik, Form } from "formik";
 import { useNavigate } from "react-router-dom";
 import * as Yup from "yup";
 import { getSingleTaskDetail, editTask } from "../../../services/taskService";
+import { uploadSingleImage } from "../../../services/commonService";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import FormField from "../../../components/ui/formField";
+import FileUploadField from "../../../components/ui/fileUploadField";
 
-// Assuming you have your validation schema somewhere, otherwise define here
-const BlogSchema = Yup.object().shape({
+const validationSchema = Yup.object().shape({
   title: Yup.string().required("Title is required"),
-  // categories: Yup.array().min(1, "Select at least one category"),
   content: Yup.string().required("Content is required"),
-  // readTime: Yup.string().required("Read time is required"),
-  publishedDate: Yup.date().nullable().required("Publish date is required"),
-  // slugUrl: Yup.string().required("Slug URL is required"),
+  publishedDate: Yup.date().required("Publish Date is required"),
   author: Yup.string().required("Author is required"),
-  // image: Yup.mixed().required("Image is required"),
-  // thumbnailImage: Yup.mixed().required("Thumbnail image is required"),
+  image: Yup.string().required("Image is required"),
+  thumbnailImage: Yup.string().required("Author Image is required"),
 });
 
 const EditTask = ({ taskId, onClose }) => {
   const navigate = useNavigate();
-
   const [initialValues, setInitialValues] = useState({
     title: "",
     content: "",
@@ -32,260 +30,222 @@ const EditTask = ({ taskId, onClose }) => {
   });
 
   const [imagePreview, setImagePreview] = useState(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState(null);
+  const [thumbPreview, setThumbPreview] = useState(null);
 
-  const getBlogDetailById = async () => {
+  const getTaskDetailById = async () => {
     try {
       const resp = await getSingleTaskDetail(taskId);
-
-      console.log("getSingleBlogDetail", resp);
       if (resp?.success) {
         setInitialValues({
-          title: resp?.data?.title || "",
-          author: resp?.data?.author || "",
-          content: resp?.data?.content || "",
-          // readTime: resp?.data?.readTime || "",
-          publishedDate: resp?.data?.publishedDate || "",
-          // image: resp?.data?.image || "",
-          // thumbnailImage: resp?.data?.thumbnailImage || "",
+          title: resp.data.title || "",
+          content: resp.data.content || "",
+          publishedDate: resp.data.publishedDate || "",
+          author: resp.data.author || "",
+          image: resp.data.image || null,
+          thumbnailImage: resp.data.thumbnailImage || null,
         });
+
+        // Set previews for existing images
+        if (resp.data.image) setImagePreview(resp.data.image);
+        if (resp.data.thumbnailImage) setThumbPreview(resp.data.thumbnailImage);
       }
     } catch (err) {
-      console.log("err", err);
-    } finally {
+      console.error("Error fetching task:", err);
+      toast.error("Failed to load task details");
     }
   };
 
   useEffect(() => {
     if (taskId) {
-      getBlogDetailById();
+      getTaskDetailById();
     }
   }, [taskId]);
 
-  // const handleImageChange = (e, setFieldValue, setPreview) => {
-  //   const file = e.currentTarget.files[0];
-  //   setFieldValue(e.currentTarget.name, file);
-  //   if (file) {
-  //     const reader = new FileReader();
-  //     reader.onloadend = () => {
-  //       setPreview(reader.result);
-  //     };
-  //     reader.readAsDataURL(file);
-  //   } else {
-  //     setPreview(null);
-  //   }
-  // };
+  const handleFileChange = (e, setFieldValue, setPreview, fieldName) => {
+    const file = e.target.files[0];
+    setFieldValue(fieldName, file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result);
+      reader.readAsDataURL(file);
+    } else {
+      setPreview(null);
+    }
+  };
+
+  const handleRemoveImage = (setFieldValue, setPreview, fieldName) => {
+    setFieldValue(fieldName, null);
+    setPreview(null);
+  };
+
+  const createFormData = (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    return formData;
+  };
 
   const onSubmit = async (values, { setSubmitting, resetForm }) => {
     setSubmitting(true);
 
     try {
-      // let uploadedImage = values.image;
-      // if (values.image instanceof File) {
-      //   const formData = new FormData();
-      //   formData.append("image", values.image);
-      //   uploadedImage = await uploadSingleImage(formData);
-      // }
-
-      // let uploadedThumbnail = values.thumbnailImage;
-      // if (values.thumbnailImage instanceof File) {
-      //   const formData = new FormData();
-      //   formData.append("image", values.thumbnailImage);
-      //   uploadedThumbnail = await uploadSingleImage(formData);
-      // }
+      const [imageResp, thumbResp] = await Promise.all([
+        values.image instanceof File
+          ? uploadSingleImage(createFormData(values.image))
+          : Promise.resolve({ data: values.image }),
+        values.thumbnailImage instanceof File
+          ? uploadSingleImage(createFormData(values.thumbnailImage))
+          : Promise.resolve({ data: values.thumbnailImage }),
+      ]);
 
       const payload = {
-        ...values,
+        title: values.title,
+        content: values.content,
         publishedDate: values.publishedDate,
-        // image: uploadedImage,
-        // thumbnailImage: uploadedThumbnail,
+        author: values.author,
+        image: imageResp.data,
+        thumbnailImage: thumbResp.data,
       };
 
       const resp = await editTask(taskId, payload);
       if (resp?.success) {
-        toast.success(resp?.message || "Task Edited successfully!");
-        resetForm();
-        navigate(-1);
+        toast.success(resp.message || "Task updated successfully!");
+        if (onClose) onClose();
+        else navigate(-1);
       } else {
-        toast.error("Something went wrong. Please try again.");
+        toast.error(resp.message || "Failed to update task");
       }
     } catch (err) {
-      alert("Error updating blog: " + (err.message || "Unknown error"));
+      console.error("Error updating task:", err);
+      toast.error(err.message || "Something went wrong");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="container  p-4 ">
-      <h1 className="text-3xl font-bold mb-6">Edit Blog</h1>
+    <div className="container p-4  mx-auto">
+      {/* <ToastContainer /> */}
 
       <Formik
         enableReinitialize
         initialValues={initialValues}
-        validationSchema={BlogSchema}
+        validationSchema={validationSchema}
         onSubmit={onSubmit}
       >
-        {({ values, setFieldValue, isSubmitting, resetForm }) => (
-          <Form className="space-y-5">
-            {/* Title */}
-            <div>
-              <label htmlFor="title" className="block font-semibold mb-1">
-                Title*
-              </label>
-              <Field
-                id="title"
-                name="title"
-                placeholder="Enter blog title"
-                className="w-full border rounded p-2 outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <ErrorMessage
-                name="title"
-                component="div"
-                className="text-red-600 text-sm mt-1"
-              />
-            </div>
-
-            {/* Content */}
-            <div>
-              <label htmlFor="content" className="block font-semibold mb-1">
-                Content*
-              </label>
-              <Field
-                as="textarea"
-                id="content"
-                name="content"
-                rows="6"
-                placeholder="Write blog content"
-                className="w-full border rounded p-2 resize-y"
-              />
-              <ErrorMessage
-                name="content"
-                component="div"
-                className="text-red-600 text-sm mt-1"
-              />
-            </div>
-
-            {/* Published Date */}
-            <div>
-              <label
-                htmlFor="publishedDate"
-                className="block font-semibold mb-1"
-              >
-                Publish Date*
-              </label>
-              <Field
-                id="publishedDate"
-                name="publishedDate"
-                type="date"
-                className="w-full border rounded p-2 outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <ErrorMessage
-                name="publishedDate"
-                component="div"
-                className="text-red-600 text-sm mt-1"
-              />
-            </div>
-
-            {/* Blog Image */}
-            {/* <div>
-              <label htmlFor="image" className="block font-semibold mb-1">
-                Blog Image*
-              </label>
-              <input
-                id="image"
-                name="image"
-                type="file"
-                accept="image/*"
-                onChange={(e) =>
-                  handleImageChange(e, setFieldValue, setImagePreview)
-                }
-                className="w-full border rounded p-2"
-              />
-              <ErrorMessage
-                name="image"
-                component="div"
-                className="text-red-600 text-sm mt-1"
-              />
-              {imagePreview && (
-                <img
-                  src={imagePreview}
-                  alt="Blog Preview"
-                  className="mt-2 max-h-48 rounded object-contain"
+        {({ setFieldValue, isSubmitting, values, resetForm }) => (
+          <Form className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Title */}
+              <div className="md:col-span-2">
+                <FormField
+                  label="Title"
+                  name="title"
+                  type="text"
+                  placeholder="Enter title"
+                  disabled={isSubmitting}
                 />
-              )}
-            </div> */}
+              </div>
 
-            {/* Thumbnail Image */}
-            {/* <div>
-              <label htmlFor="thumbnailImage" className="block font-semibold mb-1">
-                Author Profile Image*
-              </label>
-              <input
-                id="thumbnailImage"
-                name="thumbnailImage"
-                type="file"
-                accept="image/*"
-                onChange={(e) =>
-                  handleImageChange(e, setFieldValue, setThumbnailPreview)
-                }
-                className="w-full border rounded p-2"
-              />
-              <ErrorMessage
-                name="thumbnailImage"
-                component="div"
-                className="text-red-600 text-sm mt-1"
-              />
-              {thumbnailPreview && (
-                <img
-                  src={thumbnailPreview}
-                  alt="Thumbnail Preview"
-                  className="mt-2 max-h-48 rounded object-contain"
+              {/* Content */}
+              <div className="md:col-span-2">
+                <FormField
+                  as="textarea"
+                  label="Content"
+                  name="content"
+                  placeholder="Write blog content..."
+                  rows="4"
+                  disabled={isSubmitting}
                 />
-              )}
-            </div> */}
+              </div>
 
-            {/* Author */}
-            <div>
-              <label htmlFor="author" className="block font-semibold mb-1">
-                Author*
-              </label>
-              <Field
-                id="author"
-                name="author"
-                placeholder="Enter author name"
-                className="w-full border rounded p-2 outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <ErrorMessage
-                name="author"
-                component="div"
-                className="text-red-600 text-sm mt-1"
-              />
+              {/* Author */}
+              <div>
+                <FormField
+                  label="Author"
+                  name="author"
+                  type="text"
+                  placeholder="Author name"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* Published Date */}
+              <div>
+                <FormField
+                  label="Publish Date"
+                  name="publishedDate"
+                  type="date"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* Blog Image */}
+              <div>
+                <FileUploadField
+                  label="Blog Image"
+                  name="image"
+                  preview={imagePreview}
+                  currentFile={values.image}
+                  onChange={(e) =>
+                    handleFileChange(e, setFieldValue, setImagePreview, "image")
+                  }
+                  onRemove={() =>
+                    handleRemoveImage(setFieldValue, setImagePreview, "image")
+                  }
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* Thumbnail Image */}
+              <div>
+                <FileUploadField
+                  label="Thumbnail Image"
+                  name="thumbnailImage"
+                  preview={thumbPreview}
+                  currentFile={values.thumbnailImage}
+                  onChange={(e) =>
+                    handleFileChange(
+                      e,
+                      setFieldValue,
+                      setThumbPreview,
+                      "thumbnailImage"
+                    )
+                  }
+                  onRemove={() =>
+                    handleRemoveImage(
+                      setFieldValue,
+                      setThumbPreview,
+                      "thumbnailImage"
+                    )
+                  }
+                  disabled={isSubmitting}
+                />
+              </div>
             </div>
 
-            {/* Buttons */}
-            <div className="flex space-x-4 mt-6">
+            {/* Form Actions */}
+            <div className="flex justify-end space-x-4 pt-4 border-t">
               <button
                 type="button"
                 onClick={() => {
-                  // Reset form to initialValues after fetch
-                  resetForm({ values: initialValues });
+                  resetForm();
+                  setImagePreview(null);
+                  setThumbPreview(null);
                 }}
-                className="px-4 py-2 border rounded hover:bg-gray-100"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white  transition"
+                disabled={isSubmitting}
               >
                 Reset
               </button>
-              <div className="flex ">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition ${
-                    isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  {isSubmitting ? "Editing..." : "Edit Task"}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`px-6 py-2 rounded-lg text-white font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:shadow-md transition ${
+                  isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {isSubmitting ? "Updating..." : "Update Task"}
+              </button>
             </div>
           </Form>
         )}
@@ -293,5 +253,7 @@ const EditTask = ({ taskId, onClose }) => {
     </div>
   );
 };
+
+
 
 export default EditTask;

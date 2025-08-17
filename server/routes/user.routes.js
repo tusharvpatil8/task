@@ -45,6 +45,6 @@ router.get("/task/:id", taskController.getOneTask);
 router.post("/all-tasks", taskController.getAllTask);
 
 
-// router.post("/all-blogs", blogController.getAllBlogs);
+router.post("/all-blogs", blogController.getAllBlogs);
 
 module.exports = router;

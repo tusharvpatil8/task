@@ -39,14 +39,12 @@ const months = [
   };
   
   // format date - DD, MM YYYY
-  export const formatDateToDDMMMYYYY = (dateStr) => {
-    const date = new Date(dateStr);
-    const day = date.getDate();
-    const month = shortMonths[date.getMonth()];
+   export const formatDateToDDMMMYYYY = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = date.toLocaleString("en-US", { month: "short" });
     const year = date.getFullYear();
-    const suffix = getDaySuffix(day);
-    const formattedDate = `${day}${suffix} ${month}, ${year}`;
-    return formattedDate;
+    return `${day} ${month} ${year}`;
   };
   
   // format date - MM-DD-YYYY

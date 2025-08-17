@@ -1,243 +1,214 @@
 import React, { useState } from "react";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import { Formik, Form } from "formik";
 import * as Yup from "yup";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { uploadSingleImage } from "../../../services/commonService";
 import { addTask } from "../../../services/taskService";
+import FormField from "../../../components/ui/formField";
+import FileUploadField from "../../../components/ui/fileUploadField";
+import { useNavigate } from "react-router-dom";
 
-// Validation schema matching your data
-const blogSchema = Yup.object().shape({
+const validationSchema = Yup.object().shape({
   title: Yup.string().required("Title is required"),
   content: Yup.string().required("Content is required"),
   author: Yup.string().required("Author is required"),
   publishedDate: Yup.date().required("Publish Date is required"),
-  // image: Yup.mixed().required("Blog image is required"),
-  // thumbnailImage: Yup.mixed().required("Thumbnail image is required"),
+  image: Yup.string().required("Image is required"),
+  thumbnailImage: Yup.string().required("Author Image is required"),
 });
 
-const AddTask = () => {
+const initialValues = {
+  title: "",
+  content: "",
+  author: "",
+  publishedDate: "",
+  image: null,
+  thumbnailImage: null,
+};
+
+const AddTask = ({onClose}) => {
+  const navigate = useNavigate();
   const [imagePreview, setImagePreview] = useState(null);
   const [thumbPreview, setThumbPreview] = useState(null);
+
+  const handleFileChange = (e, setFieldValue, setPreview, fieldName) => {
+    const file = e.target.files[0];
+    setFieldValue(fieldName, file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result);
+      reader.readAsDataURL(file);
+    } else {
+      setPreview(null);
+    }
+  };
+
+  const handleRemoveImage = (setFieldValue, setPreview, fieldName) => {
+    setFieldValue(fieldName, null);
+    setPreview(null);
+  };
 
   const onSave = async (values, { setSubmitting, resetForm }) => {
     setSubmitting(true);
     try {
-      // Upload main blog image
-      //       const formDataImage = new FormData();
-      //       formDataImage.append("image", values.image);
-      //       const uploadImageResp = await uploadSingleImage(formDataImage);
-      // console.log("uploadImageResp", uploadImageResp)
-      // 2. Upload Thumbnail Image
-      // const formDataThumb = new FormData();
-      // formDataThumb.append("image", values.thumbnailImage);
-      // const uploadThumbResp = await uploadSingleImage(formDataThumb);
+      const [imageResp, thumbResp] = await Promise.all([
+        uploadSingleImage(createFormData(values.image)),
+        uploadSingleImage(createFormData(values.thumbnailImage)),
+      ]);
 
-      // Prepare payload with all fields
-      let payload = {
+      const payload = {
         title: values.title,
         publishedDate: values.publishedDate,
         content: values.content,
         author: values.author,
-        // image: uploadImageResp,
-        // thumbnailImage: uploadThumbResp,
+        image: imageResp?.data,
+        thumbnailImage: thumbResp?.data,
       };
-      console.log("payload", payload);
-      const resp = await addTask(payload);
 
+      const resp = await addTask(payload);
       if (resp?.success) {
         toast.success(resp.message || "Task created successfully!");
         resetForm();
         setImagePreview(null);
         setThumbPreview(null);
+         if (onClose) onClose();
+        else navigate(-1);
       } else {
-        toast.error(resp.message || "Failed to add task. Please try again.");
+        toast.error(resp.message || "Failed to add task");
       }
     } catch (err) {
       console.error("Error while saving task:", err);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(err.message || "Something went wrong");
     } finally {
       setSubmitting(false);
     }
   };
 
+  const createFormData = (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    return formData;
+  };
+
   return (
-    <div className="container p-4">
+    <div className="container p-4  mx-auto">
       <ToastContainer />
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">Add Task</h1>
 
       <Formik
-        initialValues={{
-          title: "",
-          content: "",
-          author: "",
-          publishedDate: "",
-          // image: null,
-          // thumbnailImage: null,
-        }}
-        validationSchema={blogSchema}
+        initialValues={initialValues}
+        validationSchema={validationSchema}
         onSubmit={onSave}
       >
-        {({ setFieldValue, isSubmitting }) => (
+        {({ setFieldValue, isSubmitting, values, resetForm }) => (
           <Form className="space-y-6">
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title
-              </label>
-              <Field
-                name="title"
-                type="text"
-                placeholder="Enter title"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition"
-                disabled={isSubmitting}
-              />
-              <ErrorMessage
-                name="title"
-                component="div"
-                className="text-red-500 text-sm mt-1"
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Title */}
+              <div className="md:col-span-2">
+                <FormField
+                  label="Title"
+                  name="title"
+                  type="text"
+                  placeholder="Enter title"
+                  disabled={isSubmitting}
+                />
+              </div>
 
-            {/* Content */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Content
-              </label>
-              <Field
-                as="textarea"
-                name="content"
-                placeholder="Write blog content..."
-                rows="4"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition resize-none"
-                disabled={isSubmitting}
-              />
-              <ErrorMessage
-                name="content"
-                component="div"
-                className="text-red-500 text-sm mt-1"
-              />
-            </div>
+              {/* Content */}
+              <div className="md:col-span-2">
+                <FormField
+                  as="textarea"
+                  label="Content"
+                  name="content"
+                  placeholder="Write task content..."
+                  rows="4"
+                  disabled={isSubmitting}
+                />
+              </div>
 
-            {/* Author */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Author
-              </label>
-              <Field
-                name="author"
-                type="text"
-                placeholder="Author name"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition"
-                disabled={isSubmitting}
-              />
-              <ErrorMessage
-                name="author"
-                component="div"
-                className="text-red-500 text-sm mt-1"
-              />
-            </div>
+              {/* Author */}
+              <div>
+                <FormField
+                  label="Author"
+                  name="author"
+                  type="text"
+                  placeholder="Author name"
+                  disabled={isSubmitting}
+                />
+              </div>
 
-            {/* Published Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Publish Date
-              </label>
-              <Field
-                name="publishedDate"
-                type="date"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition"
-                disabled={isSubmitting}
-              />
-              <ErrorMessage
-                name="publishedDate"
-                component="div"
-                className="text-red-500 text-sm mt-1"
-              />
-            </div>
+              {/* Published Date */}
+              <div>
+                <FormField
+                  label="Publish Date"
+                  name="publishedDate"
+                  type="date"
+                  disabled={isSubmitting}
+                />
+              </div>
 
-            {/* Blog Image */}
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Blog Image
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  setFieldValue("image", file);
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => setImagePreview(reader.result);
-                    reader.readAsDataURL(file);
-                  } else {
-                    setImagePreview(null);
+              {/* Task Image */}
+              <div>
+                <FileUploadField
+                  label="Task Image"
+                  name="image"
+                  preview={imagePreview}
+                  currentFile={values.image}
+                  onChange={(e) =>
+                    handleFileChange(e, setFieldValue, setImagePreview, "image")
                   }
-                }}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition"
-                disabled={isSubmitting}
-              />
-              <ErrorMessage
-                name="image"
-                component="div"
-                className="text-red-500 text-sm mt-1"
-              />
-              {imagePreview && (
-                <div className="mt-4">
-                  <img
-                    src={imagePreview}
-                    alt="Blog preview"
-                    className="w-full max-h-64 object-cover rounded-lg shadow-md"
-                  />
-                </div>
-              )}
-            </div> */}
-
-            {/* Thumbnail Image */}
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Thumbnail Image
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  setFieldValue("thumbnailImage", file);
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => setThumbPreview(reader.result);
-                    reader.readAsDataURL(file);
-                  } else {
-                    setThumbPreview(null);
+                  onRemove={() =>
+                    handleRemoveImage(setFieldValue, setImagePreview, "image")
                   }
-                }}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition"
-                disabled={isSubmitting}
-              />
-              <ErrorMessage
-                name="thumbnailImage"
-                component="div"
-                className="text-red-500 text-sm mt-1"
-              />
-              {thumbPreview && (
-                <div className="mt-4">
-                  <img
-                    src={thumbPreview}
-                    alt="Thumbnail preview"
-                    className="w-full max-h-40 object-cover rounded-lg shadow-md"
-                  />
-                </div>
-              )}
-            </div> */}
+                  disabled={isSubmitting}
+                />
+              </div>
 
-            {/* Submit Button */}
-            <div className="flex ">
+              {/* Thumbnail Image */}
+              <div>
+                <FileUploadField
+                  label="Thumbnail Image"
+                  name="thumbnailImage"
+                  preview={thumbPreview}
+                  currentFile={values.thumbnailImage}
+                  onChange={(e) =>
+                    handleFileChange(
+                      e,
+                      setFieldValue,
+                      setThumbPreview,
+                      "thumbnailImage"
+                    )
+                  }
+                  onRemove={() =>
+                    handleRemoveImage(
+                      setFieldValue,
+                      setThumbPreview,
+                      "thumbnailImage"
+                    )
+                  }
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            {/* Form Actions */}
+            <div className="flex justify-end space-x-4 pt-4 border-t">
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  setImagePreview(null);
+                  setThumbPreview(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white transition"
+                disabled={isSubmitting}
+              >
+                Reset
+              </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition ${
+                className={`px-6 py-2 rounded-lg text-white font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:shadow-md transition ${
                   isSubmitting ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >

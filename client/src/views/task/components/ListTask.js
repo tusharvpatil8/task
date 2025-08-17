@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import {
-  HiEye,
+  HiArrowLeft,
   HiOutlinePencil,
   HiOutlineSearch,
   HiOutlineTrash,
 } from "react-icons/hi";
 import { AiOutlineClose } from "react-icons/ai";
-import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { deleteTask, getTasks } from "../../../services/taskService";
 import EditTask from "./EditTask";
 import { toast } from "react-toastify";
@@ -18,14 +18,13 @@ const PAGESIZE = 4;
 const ListTask = () => {
   const navigateTo = useNavigate();
   const [taskData, setTaskData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // ✅ prevent full reset flicker
   const [resultTitle, setResultTitle] = useState("");
   const [searchText, setSearchText] = useState("");
   const [debouncedText, setDebouncedText] = useState("");
   const [selectedData, setSelectedData] = useState(null);
-  const [isPublishedOpen, setIsPublishedOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [modalAnimation, setModalAnimation] = useState("fadeIn"); // animation state for modal
+  const [modalAnimation, setModalAnimation] = useState("fadeIn");
   const [editingTask, setEditingTask] = useState(null);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -63,12 +62,13 @@ const ListTask = () => {
         }));
       }
     } catch {
-      alert("Failed to load tasks!");
+      toast.error("Failed to load tasks!");
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ debounce search
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedText(searchText);
@@ -76,14 +76,17 @@ const ListTask = () => {
     return () => clearTimeout(handler);
   }, [searchText]);
 
+  // ✅ reset page when search changes
   useEffect(() => {
     setPagination((prev) => ({ ...prev, currentPage: 1 }));
   }, [debouncedText]);
 
+  // ✅ fetch tasks
   useEffect(() => {
     getAllTaskData();
   }, [debouncedText, pagination.currentPage]);
 
+  // ✅ update result title
   useEffect(() => {
     if (!pagination?.total) {
       setResultTitle("Result 0 - 0 of 0");
@@ -100,6 +103,7 @@ const ListTask = () => {
       const resp = await deleteTask(selectedData?._id);
       if (resp?.success) {
         toast.success(resp?.message || "Task deleted successfully!");
+        getAllTaskData();
       } else {
         toast.error(resp?.message || "Something went wrong. Please try again.");
       }
@@ -108,40 +112,36 @@ const ListTask = () => {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setIsDeleteOpen(false);
-      getAllTaskData();
     }
   };
 
   if (editingTask) {
-    // Render EditTask instead of list
     return (
       <div className="container p-4">
-        <button
-          className="mb-4 px-4 py-2 bg-gray-300 rounded"
-          onClick={() => setEditingTask(null)}
-        >
-          Back to List
-        </button>
-        <EditTask
-          taskId={editingTask._id}
-          onClose={() => setEditingTask(null)}
-        />
+        <div className="flex items-center gap-2 mb-4">
+          <button
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
+            onClick={() => setEditingTask(null)}
+          >
+            <HiArrowLeft className="text-lg" />
+          </button>
+          <h1 className="text-lg font-bold text-gray-800">Edit Task</h1>
+        </div>
+
+        <EditTask taskId={editingTask._id} onClose={() => setEditingTask(null)} />
       </div>
     );
   }
 
   return (
-    <div className="container p-4 ">
+    <div className="container p-4">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between gap-4 mb-6">
-        <div
-          className={`px-4 py-2 rounded-lg font-semibold shadow-md bg-${themeColor}-50 text-${themeColor}-${primaryColorLevel} border border-${themeColor}-${primaryColorLevel}`}
-        >
+        <div className="px-4 py-2 rounded-lg font-semibold shadow-md bg-white">
           {resultTitle}
         </div>
-        <div className="relative w-full md:w-72">
-          <HiOutlineSearch
-            className={`absolute left-3 top-3 text-lg text-${themeColor}-${primaryColorLevel}`}
-          />
+        <div className="relative w-full md:w-72 rounded-lg font-semibold shadow-md bg-white">
+          <HiOutlineSearch className="absolute left-3 top-3 text-lg" />
           <input
             type="text"
             placeholder="Search tasks..."
@@ -158,13 +158,10 @@ const ListTask = () => {
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      ) : taskData?.length > 0 ? (
+      {/* Tasks Grid */}
+      {taskData?.length > 0 ? (
         <>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
             {taskData.map((task) => (
               <div
                 key={task._id}
@@ -177,19 +174,8 @@ const ListTask = () => {
                 />
                 <div className="p-4">
                   <h3 className="font-bold text-lg mb-2">{task.title}</h3>
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {task?.task_categories?.length > 0 ? (
-                      task.task_categories.map((cat) => (
-                        <span
-                          key={cat.value}
-                          className="px-2 py-1 text-xs rounded-full bg-gradient-to-r from-blue-400 to-blue-600 text-white"
-                        >
-                          {cat.label}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-gray-500 text-xs">No categories</span>
-                    )}
+                  <div className="text-sm font-medium text-gray-700 mb-2">
+                    {task.content}
                   </div>
                   <p className="text-sm text-gray-500 mb-4">
                     {formatDateToDDMMMYYYY(task.publishedDate)}
@@ -205,11 +191,7 @@ const ListTask = () => {
                         {task.author}
                       </span>
                     </div>
-
                     <div className="flex gap-2 text-lg">
-                      <button className="hover:text-blue-500">
-                        <HiEye />
-                      </button>
                       <button
                         className="hover:text-green-500"
                         onClick={() => setEditingTask(task)}
@@ -220,7 +202,7 @@ const ListTask = () => {
                         className="hover:text-red-500"
                         onClick={() => {
                           setSelectedData(task);
-                          setModalAnimation("fadeIn"); // reset animation on open
+                          setModalAnimation("fadeIn");
                           setIsDeleteOpen(true);
                         }}
                       >
@@ -231,6 +213,13 @@ const ListTask = () => {
                 </div>
               </div>
             ))}
+
+            {/* ✅ small overlay loader (instead of full flicker) */}
+            {loading && (
+              <div className="absolute inset-0 flex justify-center items-center bg-white/70 rounded-xl">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
           </div>
 
           {/* Pagination */}
@@ -259,9 +248,12 @@ const ListTask = () => {
           </div>
         </>
       ) : (
-        <p className="text-center text-gray-500 py-12">No Task Found</p>
+        <p className="text-center text-gray-500 py-12">
+          {loading ? "Loading..." : "No Task Found"}
+        </p>
       )}
 
+      {/* Delete Modal */}
       {(isDeleteOpen || modalAnimation === "fadeOut") && (
         <div
           className={`fixed inset-0 flex items-center justify-center bg-black/50 ${
