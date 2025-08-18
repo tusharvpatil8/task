@@ -294,10 +294,8 @@ module.exports = {
   getAllBlogs: async (search, pageNo, perPage, filter) => {
     try {
       const skip = (pageNo - 1) * perPage;
-console.log("skip",skip)
       const searchQuery = await BlogSearchQuery(search);
-      console.log("searchQuery : ", JSON.stringify(searchQuery));
-       const finalQuery = { ...filter, ...searchQuery };
+      const finalQuery = { ...filter, ...searchQuery };
 
       const blogsWithCategories = await Blog.aggregate([
         { $match: finalQuery },
