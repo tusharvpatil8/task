@@ -5,8 +5,8 @@ import { signIn } from "../../services/authService";
 import {
   onSignInSuccess,
   onSignOutSuccess,
-} from "../../store/auth/sessionSlice";
-import { setUser, initialState } from "../../store/auth/userSlice";
+} from "../../store/slices/auth/sessionSlice";
+import { setUser, initialState } from "../../store/slices/auth/userSlice";
 import appConfig from "../../configs/app.config";
 import { toast } from "react-toastify";
 

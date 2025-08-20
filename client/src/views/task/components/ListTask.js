@@ -7,21 +7,21 @@ import {
 } from "react-icons/hi";
 import { AiOutlineClose } from "react-icons/ai";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
 import { deleteTask, getTasks } from "../../../services/taskService";
 import EditTask from "./EditTask";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import DataNoFound from "../../../assets/svg/dataNoFound";
+import useDebounce from "../../../utils/hooks/useDebounce";
 
 const PAGESIZE = 4;
 
+
 const ListTask = () => {
-  const navigateTo = useNavigate();
   const [taskData, setTaskData] = useState([]);
-  const [loading, setLoading] = useState(false); // ✅ prevent full reset flicker
+  const [loading, setLoading] = useState(false);
   const [resultTitle, setResultTitle] = useState("");
   const [searchText, setSearchText] = useState("");
-  const [debouncedText, setDebouncedText] = useState("");
   const [selectedData, setSelectedData] = useState(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [modalAnimation, setModalAnimation] = useState("fadeIn");
@@ -37,14 +37,17 @@ const ListTask = () => {
     (state) => state?.theme?.primaryColorLevel
   );
 
+  const debouncedText = useDebounce(searchText, 400);
+
   const formatDateToDDMMMYYYY = (dateString) => {
     const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, "0");
-    const month = date.toLocaleString("en-US", { month: "short" });
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
+    return `${date.getDate().toString().padStart(2, "0")} ${date.toLocaleString(
+      "en-US",
+      { month: "short" }
+    )} ${date.getFullYear()}`;
   };
 
+  // ✅ fetch tasks
   const getAllTaskData = async () => {
     setLoading(true);
     try {
@@ -68,34 +71,30 @@ const ListTask = () => {
     }
   };
 
-  // ✅ debounce search
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedText(searchText);
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [searchText]);
-
-  // ✅ reset page when search changes
+  // ✅ reset to page 1 when search changes
   useEffect(() => {
     setPagination((prev) => ({ ...prev, currentPage: 1 }));
   }, [debouncedText]);
 
-  // ✅ fetch tasks
+  // ✅ fetch on search or page change
   useEffect(() => {
     getAllTaskData();
   }, [debouncedText, pagination.currentPage]);
 
-  // ✅ update result title
+  // ✅ result title calculation
   useEffect(() => {
     if (!pagination?.total) {
       setResultTitle("Result 0 - 0 of 0");
       return;
     }
+
     const start = (pagination.currentPage - 1) * pagination.perPage + 1;
     const end = start + taskData.length - 1;
     const total = pagination.total;
-    setResultTitle(`Result ${start} - ${end} of ${total}`);
+
+    setResultTitle(
+      `Result ${pagination.currentPage} - ${taskData.length} of ${total}`
+    );
   }, [pagination, taskData]);
 
   const onDelete = async () => {
@@ -115,6 +114,8 @@ const ListTask = () => {
     }
   };
 
+
+  // ✅ show edit page
   if (editingTask) {
     return (
       <div className="container p-4">
@@ -127,8 +128,11 @@ const ListTask = () => {
           </button>
           <h1 className="text-lg font-bold text-gray-800">Edit Task</h1>
         </div>
-
-        <EditTask taskId={editingTask._id} onClose={() => setEditingTask(null)} />
+        <EditTask
+          taskId={editingTask._id}
+          onClose={() => setEditingTask(null)}
+          getAllTaskData={getAllTaskData}
+        />
       </div>
     );
   }
@@ -214,7 +218,7 @@ const ListTask = () => {
               </div>
             ))}
 
-            {/* ✅ small overlay loader (instead of full flicker) */}
+            {/* Loader */}
             {loading && (
               <div className="absolute inset-0 flex justify-center items-center bg-white/70 rounded-xl">
                 <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -223,7 +227,7 @@ const ListTask = () => {
           </div>
 
           {/* Pagination */}
-          <div className="flex justify-center mt-8 space-x-2">
+            <div className="flex justify-center mt-8 space-x-2">
             {Array.from(
               { length: Math.ceil(pagination.total / pagination.perPage) },
               (_, i) => (
@@ -249,7 +253,7 @@ const ListTask = () => {
         </>
       ) : (
         <p className="text-center text-gray-500 py-12">
-          {loading ? "Loading..." : "No Task Found"}
+          {loading ? "Loading..." : <DataNoFound />}
         </p>
       )}
 

@@ -1,23 +1,24 @@
 import React, { useState } from "react";
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify"; // removed ToastContainer here
 import { uploadSingleImage } from "../../../services/commonService";
 import { addTask } from "../../../services/taskService";
 import FormField from "../../../components/ui/formField";
 import FileUploadField from "../../../components/ui/fileUploadField";
 import { useNavigate } from "react-router-dom";
 
+// ✅ Validation Schema
 const validationSchema = Yup.object().shape({
   title: Yup.string().required("Title is required"),
   content: Yup.string().required("Content is required"),
   author: Yup.string().required("Author is required"),
   publishedDate: Yup.date().required("Publish Date is required"),
-  image: Yup.string().required("Image is required"),
-  thumbnailImage: Yup.string().required("Author Image is required"),
+  image: Yup.mixed().required("Image is required"),
+  thumbnailImage: Yup.mixed().required("Author Image is required"),
 });
 
+// ✅ Initial Values
 const initialValues = {
   title: "",
   content: "",
@@ -27,27 +28,34 @@ const initialValues = {
   thumbnailImage: null,
 };
 
-const AddTask = ({onClose}) => {
+// ✅ Helpers moved outside component
+const createFormData = (file) => {
+  const formData = new FormData();
+  formData.append("image", file);
+  return formData;
+};
+
+const handleFileChange = (e, setFieldValue, setPreview, fieldName) => {
+  const file = e.target.files[0];
+  setFieldValue(fieldName, file);
+  if (file) {
+    const reader = new FileReader();
+    reader.onloadend = () => setPreview(reader.result);
+    reader.readAsDataURL(file);
+  } else {
+    setPreview(null);
+  }
+};
+
+const handleRemoveImage = (setFieldValue, setPreview, fieldName) => {
+  setFieldValue(fieldName, null);
+  setPreview(null);
+};
+
+const AddTask = ({ onClose }) => {
   const navigate = useNavigate();
   const [imagePreview, setImagePreview] = useState(null);
   const [thumbPreview, setThumbPreview] = useState(null);
-
-  const handleFileChange = (e, setFieldValue, setPreview, fieldName) => {
-    const file = e.target.files[0];
-    setFieldValue(fieldName, file);
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setPreview(reader.result);
-      reader.readAsDataURL(file);
-    } else {
-      setPreview(null);
-    }
-  };
-
-  const handleRemoveImage = (setFieldValue, setPreview, fieldName) => {
-    setFieldValue(fieldName, null);
-    setPreview(null);
-  };
 
   const onSave = async (values, { setSubmitting, resetForm }) => {
     setSubmitting(true);
@@ -67,13 +75,13 @@ const AddTask = ({onClose}) => {
       };
 
       const resp = await addTask(payload);
+
       if (resp?.success) {
         toast.success(resp.message || "Task created successfully!");
         resetForm();
         setImagePreview(null);
         setThumbPreview(null);
-         if (onClose) onClose();
-        else navigate(-1);
+        onClose ? onClose() : navigate(-1);
       } else {
         toast.error(resp.message || "Failed to add task");
       }
@@ -85,15 +93,8 @@ const AddTask = ({onClose}) => {
     }
   };
 
-  const createFormData = (file) => {
-    const formData = new FormData();
-    formData.append("image", file);
-    return formData;
-  };
-
   return (
-    <div className="container p-4  mx-auto">
-      <ToastContainer />
+    <div className="container p-4 mx-auto">
 
       <Formik
         initialValues={initialValues}

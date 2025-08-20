@@ -4,6 +4,8 @@ import * as Yup from "yup";
 import useAuth from "../../../utils/hooks/useAuth";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { toast } from "react-toastify";
+import appConfig from "../../../configs/app.config";
+import { useNavigate } from "react-router-dom";
 
 const loginSchema = Yup.object().shape({
   email: Yup.string().email("Invalid email").required("Email is required"),
@@ -16,6 +18,7 @@ const Login = ({ onSwitchToSignup, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { userSignIn } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogin = async (values, { setSubmitting, resetForm }) => {
     setLoading(true);
@@ -28,9 +31,12 @@ const Login = ({ onSwitchToSignup, onClose }) => {
         toast.success(result?.message);
         resetForm();
         onClose?.();
+        navigate(appConfig.taskEntryPath);
+
       } else {
         toast.error(result.message);
       }
+
     } catch (error) {
       console.error("Login error:", error.message || error);
     } finally {

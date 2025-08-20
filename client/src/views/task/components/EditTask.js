@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Formik, Form } from "formik";
 import { useNavigate } from "react-router-dom";
 import * as Yup from "yup";
@@ -18,7 +18,7 @@ const validationSchema = Yup.object().shape({
   thumbnailImage: Yup.string().required("Author Image is required"),
 });
 
-const EditTask = ({ taskId, onClose }) => {
+const EditTask = ({ taskId, onClose, getAllTaskData }) => {
   const navigate = useNavigate();
   const [initialValues, setInitialValues] = useState({
     title: "",
@@ -32,34 +32,12 @@ const EditTask = ({ taskId, onClose }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [thumbPreview, setThumbPreview] = useState(null);
 
-  const getTaskDetailById = async () => {
-    try {
-      const resp = await getSingleTaskDetail(taskId);
-      if (resp?.success) {
-        setInitialValues({
-          title: resp.data.title || "",
-          content: resp.data.content || "",
-          publishedDate: resp.data.publishedDate || "",
-          author: resp.data.author || "",
-          image: resp.data.image || null,
-          thumbnailImage: resp.data.thumbnailImage || null,
-        });
-
-        // Set previews for existing images
-        if (resp.data.image) setImagePreview(resp.data.image);
-        if (resp.data.thumbnailImage) setThumbPreview(resp.data.thumbnailImage);
-      }
-    } catch (err) {
-      console.error("Error fetching task:", err);
-      toast.error("Failed to load task details");
-    }
+  // ---------- Helpers ----------
+  const createFormData = (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    return formData;
   };
-
-  useEffect(() => {
-    if (taskId) {
-      getTaskDetailById();
-    }
-  }, [taskId]);
 
   const handleFileChange = (e, setFieldValue, setPreview, fieldName) => {
     const file = e.target.files[0];
@@ -78,13 +56,38 @@ const EditTask = ({ taskId, onClose }) => {
     setPreview(null);
   };
 
-  const createFormData = (file) => {
-    const formData = new FormData();
-    formData.append("image", file);
-    return formData;
-  };
+  // ---------- Fetch Task ----------
+  const getTaskDetailById = useCallback(async () => {
+    try {
+      const resp = await getSingleTaskDetail(taskId);
+      if (resp?.success && resp.data) {
+        const { title, content, publishedDate, author, image, thumbnailImage } =
+          resp.data;
 
-  const onSubmit = async (values, { setSubmitting, resetForm }) => {
+        setInitialValues({
+          title: title || "",
+          content: content || "",
+          publishedDate: publishedDate ? publishedDate.split("T")[0] : "",
+          author: author || "",
+          image: image || null,
+          thumbnailImage: thumbnailImage || null,
+        });
+
+        if (image) setImagePreview(image);
+        if (thumbnailImage) setThumbPreview(thumbnailImage);
+      }
+    } catch (err) {
+      console.error("Error fetching task:", err);
+      toast.error("Failed to load task details");
+    }
+  }, [taskId]);
+
+  useEffect(() => {
+    if (taskId) getTaskDetailById();
+  }, [taskId, getTaskDetailById]);
+
+  // ---------- Submit ----------
+  const onSubmit = async (values, { setSubmitting }) => {
     setSubmitting(true);
 
     try {
@@ -102,15 +105,15 @@ const EditTask = ({ taskId, onClose }) => {
         content: values.content,
         publishedDate: values.publishedDate,
         author: values.author,
-        image: imageResp.data,
-        thumbnailImage: thumbResp.data,
+        image: imageResp?.data,
+        thumbnailImage: thumbResp?.data,
       };
 
       const resp = await editTask(taskId, payload);
       if (resp?.success) {
         toast.success(resp.message || "Task updated successfully!");
-        if (onClose) onClose();
-        else navigate(-1);
+        getAllTaskData?.();
+        onClose ? onClose() : navigate(-1);
       } else {
         toast.error(resp.message || "Failed to update task");
       }
@@ -123,9 +126,7 @@ const EditTask = ({ taskId, onClose }) => {
   };
 
   return (
-    <div className="container p-4  mx-auto">
-      {/* <ToastContainer /> */}
-
+    <div className="container p-4 mx-auto">
       <Formik
         enableReinitialize
         initialValues={initialValues}
@@ -152,7 +153,7 @@ const EditTask = ({ taskId, onClose }) => {
                   as="textarea"
                   label="Content"
                   name="content"
-                  placeholder="Write blog content..."
+                  placeholder="Write task content..."
                   rows="4"
                   disabled={isSubmitting}
                 />
@@ -169,7 +170,7 @@ const EditTask = ({ taskId, onClose }) => {
                 />
               </div>
 
-              {/* Published Date */}
+              {/* Publish Date */}
               <div>
                 <FormField
                   label="Publish Date"
@@ -179,10 +180,10 @@ const EditTask = ({ taskId, onClose }) => {
                 />
               </div>
 
-              {/* Blog Image */}
+              {/* Task Image */}
               <div>
                 <FileUploadField
-                  label="Blog Image"
+                  label="Task Image"
                   name="image"
                   preview={imagePreview}
                   currentFile={values.image}
@@ -232,7 +233,7 @@ const EditTask = ({ taskId, onClose }) => {
                   setImagePreview(null);
                   setThumbPreview(null);
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white  transition"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white transition"
                 disabled={isSubmitting}
               >
                 Reset
@@ -253,7 +254,5 @@ const EditTask = ({ taskId, onClose }) => {
     </div>
   );
 };
-
-
 
 export default EditTask;

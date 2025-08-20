@@ -60,4 +60,17 @@ module.exports = {
   categorySchema: Joi.object().keys({
     categoryName: validate.reqString,
   }),
+
+
+  // ----------------- Task Schema ----------------------------------------------
+
+  taskSchema: Joi.object().keys({
+    task_id: validate.string,
+    title: validate.reqString,
+    author: validate.reqString,
+    publishedDate: validate.reqDate,
+    content: validate.reqString,
+    image: validate.reqString,
+    thumbnailImage: validate.reqString,
+  }),
 };

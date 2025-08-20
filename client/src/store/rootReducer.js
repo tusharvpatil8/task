@@ -1,5 +1,5 @@
 import { combineReducers } from "redux";
-import auth from "./auth";
+import auth from "./slices/auth";
 
 const rootReducer = (asyncReducers) => (state, action) => {
   const combinedReducer = combineReducers({

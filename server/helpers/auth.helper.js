@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const isset = require("isset");
 const createError = require("http-errors");
 const { findAdminByEmail } = require("../services/admin.services");
+const { findUserByEmail } = require("../services/user.services");
 
 //======================================= sign Access Token =======================================//
 /**
@@ -57,71 +58,67 @@ const { findAdminByEmail } = require("../services/admin.services");
    in main controllers for further use refer to  other projects
  *
  */
-// module.exports.isUserAuthentic = (req, res, next) => {
-//   try {
-//     let token = req.headers.authorization;
-//     // console.log("token", token);
-//     if (!token)
-//       return res.status(401).json({
-//         success: false,
-//         message: "Authorization Token is required.",
-//         isAuth: false,
-//         data: [],
-//       });
-//     token = token?.split(" ");
-//     token = token[1];
+module.exports.isUserAuthentic = (req, res, next) => {
+  let token = req.headers.authorization;
+  console.log("token", token);
 
-//     jwt.verify(token, JWTSecretKey, async (err, result) => {
-//       if (err) {
-//         console.log("error", err);
+  if (!token) {
+    return next(createError.Unauthorized("Authorization Token is required."));
+  }
 
-//         return res.status(401).json({
-//           success: false,
-//           message: "Something is wrong in Authentication.Please try again.",
-//           isAuth: false,
-//           data: [],
-//         });
-//       }
-//       // console.log("result", result);
+  if (token.startsWith("Bearer ")) {
+    token = token.slice(7);
+  } else {
+    token = token.trim();
+  }
 
-//       const userData = await getUserByEmail(result.email);
+  if (!token) {
+    return next(createError.Unauthorized("Invalid token format."));
+  }
 
-//       if (!userData)
-//         return next(createError.Unauthorized("You are not authorized!"));
+  jwt.verify(token, JWTSecretKey, async (err, result) => {
+    if (err) {
+      console.log(err);
+      return res.status(401).json({
+        success: false,
+        status: 401,
+        message: "Invalid token or expired! " + err.message,
+        isAuth: false,
+        data: [],
+      });
+    }
 
-//       if (result && isset(result.userId)) {
-//         res.locals.userId = result.userId;
-//         res.locals.userRole = result.userRole;
-//         res.locals.userEmail = result.email;
-//         return next();
-//       }
-//       return next(createError.Unauthorized("Invalid Token or Expired!"));
-//     });
+    console.log(result);
 
-//     // // if (result && isset(result.userId)) {
-//     // //   res.locals.userId = result.userId;
-//     // //   res.locals.userRole = result.userRole;
-//     // //   res.locals.userEmail = result.email;
-//     // //   return next();
-//     // // }
-//     // return res.status(401).json({
-//     //   success: false,
-//     //   message: "You are not authorized! abv",
-//     //   isAuth: false,
-//     //   data: [],
-//     // });
-//   } catch (err) {
-//     console.log(err);
-//     return res.status(401).json({
-//       success: false,
-//       message: "You are not authorized!",
-//       isAuth: false,
-//       data: [],
-//     });
-//   }
-// };
+    if (result && result.user_id) {
+      const getUserData = await findUserByEmail(result.email);
+
+      if (!getUserData) {
+        return res.status(401).json({
+          success: false,
+          status: 401,
+          message: "Invalid token or expired!",
+          isAuth: false,
+          data: [],
+        });
+      }
+
+      req.user = getUserData;
+      return next();
+    }
+
+    return res.status(401).json({
+      success: false,
+      status: 401,
+      message: "Invalid token or expired!",
+      isAuth: false,
+      data: [],
+    });
+  });
+};
 
 // =================================== Check admin authentication  ===================================
+
 
 /**
  * role based access controller middleware to use directly in the routes for role based access control for Admins only

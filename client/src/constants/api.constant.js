@@ -1,10 +1,3 @@
-export const TOKEN_TYPE = "Bearer ";
-export const REQUEST_HEADER_AUTH_KEY = "Authorization";
-// export const BACKEND_SERVER_URL = process.env.REACT_APP_BACKEND_URL;
-
-export const CRYPTO_JS_SECRET_KEY = process.env.REACT_APP_CRYPTO_JS_SECRET_KEY;
-export const ENCRYPT_DECRYPT_IV_KEY =
-  process.env.REACT_APP_ENCRYPT_DECRYPT_IV_KEY;
 
 
 // ------- Project mode -----------------------------------------------------------------

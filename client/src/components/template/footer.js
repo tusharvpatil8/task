@@ -5,6 +5,7 @@ import LinkedIn from "../../assets/svg/LinkedIn";
 import Facebook from "../../assets/svg/Facebook";
 import Phone from "../../assets/svg/Phone";
 import Email from "../../assets/svg/Email";
+import logo from "../../assets/logo/logo.png";
 import {
   ROOT,
   ABOUT_US_PREFIX_PATH,
@@ -19,7 +20,7 @@ import {
 } from "../../constants/route.constant";
 import { capitalizeFirstLetter } from "../../utils/commonFunctions";
 
-const Footer = ({ footerData, qrCodes, social = [] }) => {
+const Footer = ({ footerData }) => {
   const location = useLocation();
 
   const handleHomeClick = () => {
@@ -32,12 +33,11 @@ const Footer = ({ footerData, qrCodes, social = [] }) => {
     <footer className="mt-auto bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-white">
-          {/* Logo & Description */}
           <div>
             <img
-              src={footerData?.footerMainLogo || "/img/home/whiteLogo.png"}
+              src={logo}
               alt="logo"
-              className="w-[131px] h-[50px]"
+              className="w-36 h-12 md:w-40 md:h-12"
             />
             <p className="mt-4 font-semibold text-sm">
               {capitalizeFirstLetter(footerData?.details) ||
@@ -72,31 +72,7 @@ const Footer = ({ footerData, qrCodes, social = [] }) => {
               </Link>
             </div>
 
-            {/* Dynamic Social Icons */}
-            {social.length > 0 && (
-              <div className="flex items-center gap-4 mt-4">
-                {social.map((item) => {
-                  const name = item.name.toLowerCase();
-                  return (
-                    <a
-                      key={item.id}
-                      href={item.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={name}
-                      className="w-8 h-8 bg-black bg-opacity-10 flex items-center justify-center rounded-md hover:bg-opacity-25 hover:scale-105 transition duration-300 cursor-pointer"
-                    >
-                      <img
-                        src={item.logo}
-                        alt={`${name} logo`}
-                        className="w-5 h-5 object-contain"
-                        loading="lazy"
-                      />
-                    </a>
-                  );
-                })}
-              </div>
-            )}
+          
           </div>
 
           {/* Quick Links */}
@@ -151,8 +127,8 @@ const Footer = ({ footerData, qrCodes, social = [] }) => {
               <div className="w-8 h-8 bg-black bg-opacity-10 flex items-center justify-center rounded-md">
                 <Phone />
               </div>
-              <a href={`tel:${footerData?.phoneNo || "+64 8554755"}`} className="font-semibold">
-                {footerData?.phoneNo || "+64 8554755"}
+              <a href={`tel:${footerData?.phoneNo || "+64 85546755"}`} className="font-semibold">
+                {footerData?.phoneNo || "+64 85546755"}
               </a>
             </div>
 
@@ -161,34 +137,14 @@ const Footer = ({ footerData, qrCodes, social = [] }) => {
                 <Email />
               </div>
               <a
-                href={`mailto:${footerData?.email || "sales@xyz.co.nz"}`}
+                href={`mailto:${footerData?.email || "task@yopmail.com"}`}
                 className="font-semibold"
               >
-                {footerData?.email || "sales@xyz.co.nz"}
+                {footerData?.email || "task@yopmail.com"}
               </a>
             </div>
 
-            {/* QR Codes */}
-            {qrCodes?.length > 0 && (
-              <div className="flex items-center gap-6 mt-6">
-                <div>
-                  <span className="font-semibold">Android</span>
-                  <img
-                    src={qrCodes[0].android}
-                    alt="android"
-                    className="w-20 h-20 object-cover rounded-lg"
-                  />
-                </div>
-                <div>
-                  <span className="font-semibold">iOS</span>
-                  <img
-                    src={qrCodes[0].ios}
-                    alt="ios"
-                    className="w-20 h-20 object-cover rounded-lg"
-                  />
-                </div>
-              </div>
-            )}
+            
           </div>
         </div>
 

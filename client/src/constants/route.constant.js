@@ -1,5 +1,6 @@
 export const ROOT = "/";
 export const ACCESS_DENIED_PATH = "/access-denied";
+export const TASK_PREFIX_PATH = "/task";
 export const HOME_PREFIX_PATH = "/home";
 export const ABOUT_US_PREFIX_PATH = "/about-us";
 export const CONTACT_US_PREFIX_PATH = "/contact-us";

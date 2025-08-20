@@ -5,6 +5,8 @@ const blogController = require("../controller/admin/blog.controller");
 const taskController = require("../controller/user/task.controller")
 const { ValidateBody } = require("../validation/validation.methods");
 const schemas = require("../validation/validation.schemas");
+const { isUserAuthentic } = require("../helpers/auth.helper");
+const validationSchemas = require("../validation/validation.schemas");
 
 // -------------------------- User Side Authentication -------------------------- //
 
@@ -20,31 +22,37 @@ router.post(
   userController.login
 );
 
-// -------------------------- Blogs -------------------------- //
+// -------------------------- Tasks -------------------------- //
 
 router.post(
   "/add-task",
-  // isAdminAuthentic,
-  // ValidateBody(validationSchema.blogSchema),
+  isUserAuthentic,
+  ValidateBody(validationSchemas.taskSchema),
   taskController.addTask
 );
 
 router.put(
   "/task/edit/:id",
-  // isAdminAuthentic,
+  isUserAuthentic,
   taskController.editTask
 );
 
 router.delete(
   "/task/delete/:id",
-  // isAdminAuthentic,
+   isUserAuthentic,
   taskController.deleteTask
 );
-router.get("/task/:id", taskController.getOneTask);
+router.get("/task/:id",
+  isUserAuthentic,
+   taskController.getOneTask);
 
-router.post("/all-tasks", taskController.getAllTask);
+router.post("/all-tasks", 
+  isUserAuthentic,
+  taskController.getAllTask);
 
 
-router.post("/all-blogs", blogController.getAllBlogs);
+router.post("/all-blogs", 
+  isUserAuthentic,
+  blogController.getAllBlogs);
 
 module.exports = router;

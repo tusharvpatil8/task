@@ -23,7 +23,7 @@ const BlogCard = ({
           <img
             className="w-full h-[200px] object-cover rounded-xl"
             src={image}
-            alt="Blog"
+            alt="Task"
           />
           <div className="py-4">
             <div className="flex items-center mb-2">
