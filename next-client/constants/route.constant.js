@@ -1,0 +1,14 @@
+export const ROOT = "/";
+export const ACCESS_DENIED_PATH = "/access-denied";
+export const TASK_PREFIX_PATH = "/task";
+export const HOME_PREFIX_PATH = "/home";
+export const ABOUT_US_PREFIX_PATH = "/about-us";
+export const CONTACT_US_PREFIX_PATH = "/contact-us";
+export const FAQS_PREFIX_PATH = "/faqs";
+export const PRIVACY_POLICY_PREFIX_PATH = "/privacy-policy";
+export const TERMS_AND_CONDITIONS_PREFIX_PATH = "/terms-and-conditions";
+export const RETURN_POLICY_PREFIX_PATH = "/return-policy";
+export const DELIVERY_INFORMATION_PREFIX_PATH = "/delivery-information";
+export const TERMS_OF_USE_PREFIX_PATH = "/terms-of-use";
+export const LOGIN_PREFIX_PATH = "/login";
+export const PRODUCTS_PREFIX_PATH = "/products";
