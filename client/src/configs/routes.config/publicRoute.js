@@ -8,12 +8,10 @@ const publicRoute = [
     component: React.lazy(() => import("../../views/home")),
     authority: [],
   },
-
   {
     key: "blogs",
     path: `/blogs`,
     component: React.lazy(() => import("../../views/blogs")),
-    // authority: [USER],
     header: true,
     footer: true,
   },
@@ -31,7 +29,6 @@ const publicRoute = [
     key: "task",
     path: `/task`,
     component: React.lazy(() => import("../../views/task")),
-    // authority: [USER],
     header: true,
     footer: true,
   },
