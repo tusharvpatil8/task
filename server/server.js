@@ -9,7 +9,7 @@ const http = require("http");
 const path = require("path");
 const router = require("./routes/index");
 
-const PORT = process.env.PORT || 8501;
+const PORT = process.env.PORT || 2001;
 const app = express();
 
 require("./config/mongodb");

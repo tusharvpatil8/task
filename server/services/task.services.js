@@ -54,7 +54,7 @@ module.exports = {
   deleteTask: async (taskId) => {
     console.log("taskId", taskId);
     try {
-      const task = await Task.deleteOne({ _id: taskId }); // ✅ FIXED
+      const task = await Task.deleteOne({ _id: taskId });
       if (!task || task.deletedCount === 0) {
         throw createError.BadRequest("Invalid task id.");
       }

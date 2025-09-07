@@ -5,7 +5,7 @@ import {
   HiOutlineSearch,
   HiOutlineTrash,
 } from "react-icons/hi";
-import { AiOutlineClose } from "react-icons/ai";
+import { AiOutlineClose } from "react-icons/ai";  
 import { useSelector } from "react-redux";
 import { deleteTask, getTasks } from "../../../services/taskService";
 import EditTask from "./EditTask";
@@ -81,7 +81,7 @@ const ListTask = () => {
     getAllTaskData();
   }, [debouncedText, pagination.currentPage]);
 
-  // ✅ result title calculation
+  // ✅ result title calculation    
   useEffect(() => {
     if (!pagination?.total) {
       setResultTitle("Result 0 - 0 of 0");

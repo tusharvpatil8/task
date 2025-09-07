@@ -13,7 +13,7 @@ module.exports = {
     const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${
       req.file.filename
     }`;
-
+    
     return res.status(200).json({
       success: true,
       message: "Image uploaded successfully",

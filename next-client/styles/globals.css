@@ -9,7 +9,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-    --font-sans: 'Quicksand', sans-serif;
+  --font-sans: "Quicksand", sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +22,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-    font-family: var(--font-sans);
+  font-family: var(--font-sans);
 }
 
 /* Custom animation */
@@ -39,8 +39,6 @@ body {
 .animate-slideDown {
   animation: slideDown 0.3s ease forwards;
 }
-
-
 
 /* login modal animation */
 
@@ -93,3 +91,52 @@ body {
   animation: modalClose 0.3s ease-out forwards;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out both;
+}
+.animate-fadeOut {
+  animation: fadeOut 0.2s ease-in both;
+}
+
+@keyframes modalOpen {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes modalClose {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+.animate-modalOpen {
+  animation: modalOpen 0.25s ease-out both;
+}
+.animate-modalClose {
+  animation: modalClose 0.25s ease-in both;
+}

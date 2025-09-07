@@ -11,9 +11,9 @@ export const getSingleTaskDetail = (id) => {
   return api.get(`/user/task/${id}`);
 };
 
-export function getTasks(data) {
-    return api.post("user/all-tasks", data);
-}
+  export function getTasks(data) {
+      return api.post("user/all-tasks", data);
+  }
 
 export const deleteTask = (id, data) => {
   return api.delete(`user/task/delete/${id}`, data);

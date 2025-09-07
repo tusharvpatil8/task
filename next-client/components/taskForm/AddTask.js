@@ -18,7 +18,6 @@ const validationSchema = Yup.object().shape({
   thumbnailImage: Yup.mixed().required("Author Image is required"),
 });
 
-// ✅ Initial Values
 const initialValues = {
   title: "",
   content: "",
@@ -52,7 +51,8 @@ const handleRemoveImage = (setFieldValue, setPreview, fieldName) => {
   setPreview(null);
 };
 
-const AddTask = ({ onClose }) => {
+const AddTask = ({ ...props }) => {
+  const { onClose, getAllTaskData } = props;
   const router = useRouter(); // Changed from useNavigate to useRouter
   const [imagePreview, setImagePreview] = useState(null);
   const [thumbPreview, setThumbPreview] = useState(null);
@@ -81,7 +81,8 @@ const AddTask = ({ onClose }) => {
         resetForm();
         setImagePreview(null);
         setThumbPreview(null);
-        onClose ? onClose() : router.back(); // Changed from navigate(-1) to router.back()
+        getAllTaskData();
+        onClose ? onClose() : router.back();
       } else {
         toast.error(resp.message || "Failed to add task");
       }
@@ -95,7 +96,6 @@ const AddTask = ({ onClose }) => {
 
   return (
     <div className="container p-4 mx-auto">
-
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}

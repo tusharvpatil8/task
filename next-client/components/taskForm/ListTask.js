@@ -7,35 +7,35 @@ import {
 } from "react-icons/hi";
 import { AiOutlineClose } from "react-icons/ai";
 import { useSelector } from "react-redux";
-import { deleteTask, getTasks } from "@/services/taskService";
+import { deleteTask } from "@/services/taskService";
 import EditTask from "@/components/taskForm/EditTask";
-import { toast } from "react-toastify";
 import DataNoFound from "@/assets/svg/dataNoFound";
-import useDebounce from "@/utils/hooks/useDebounce";
 
-const PAGESIZE = 4;
-
-const ListTask = () => {
-  const [taskData, setTaskData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [resultTitle, setResultTitle] = useState("");
-  const [searchText, setSearchText] = useState("");
-  const [selectedData, setSelectedData] = useState(null);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [modalAnimation, setModalAnimation] = useState("fadeIn");
-  const [editingTask, setEditingTask] = useState(null);
-  const [pagination, setPagination] = useState({
-    total: 0,
-    currentPage: 1,
-    perPage: PAGESIZE,
-  });
+const ListTask = ({ ...props }) => {
+  const {
+    taskData,
+    loading,
+    resultTitle,
+    selectedData,
+    isDeleteOpen,
+    modalAnimation,
+    editingTask,
+    searchText,
+    setSelectedData,
+    setIsDeleteOpen,
+    setModalAnimation,
+    setEditingTask,
+    setSearchText,
+    getAllTaskData,
+    pagination,
+    setPagination,
+  } = props;
 
   const themeColor = useSelector((state) => state?.theme?.themeColor);
   const primaryColorLevel = useSelector(
     (state) => state?.theme?.primaryColorLevel
   );
 
-  const debouncedText = useDebounce(searchText, 400);
 
   const formatDateToDDMMMYYYY = (dateString) => {
     const date = new Date(dateString);
@@ -45,55 +45,6 @@ const ListTask = () => {
     )} ${date.getFullYear()}`;
   };
 
-  // ✅ fetch tasks
-  const getAllTaskData = async () => {
-    setLoading(true);
-    try {
-      const payload = {
-        search: debouncedText,
-        perPage: pagination.perPage,
-        pageNo: pagination.currentPage,
-      };
-      const resp = await getTasks(payload);
-      if (resp?.success) {
-        setTaskData(resp.data || []);
-        setPagination((prev) => ({
-          ...prev,
-          total: resp.pagination.count || 0,
-        }));
-      }
-    } catch {
-      toast.error("Failed to load tasks!");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ✅ reset to page 1 when search changes
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, currentPage: 1 }));
-  }, [debouncedText]);
-
-  // ✅ fetch on search or page change
-  useEffect(() => {
-    getAllTaskData();
-  }, [debouncedText, pagination.currentPage]);
-
-  // ✅ result title calculation
-  useEffect(() => {
-    if (!pagination?.total) {
-      setResultTitle("Result 0 - 0 of 0");
-      return;
-    }
-
-    const start = (pagination.currentPage - 1) * pagination.perPage + 1;
-    const end = start + taskData.length - 1;
-    const total = pagination.total;
-
-    setResultTitle(
-      `Result ${pagination.currentPage} - ${taskData.length} of ${total}`
-    );
-  }, [pagination, taskData]);
 
   const onDelete = async () => {
     try {
@@ -301,20 +252,6 @@ const ListTask = () => {
           </div>
         </div>
       )}
-
-      <style>
-        {`
-          @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-          @keyframes fadeOut { from { opacity: 1 } to { opacity: 0 } }
-          .animate-fadeIn { animation: fadeIn .2s ease-out both }
-          .animate-fadeOut { animation: fadeOut .2s ease-in both }
-
-          @keyframes modalOpen { from { transform: translateY(10px); opacity:0 } to { transform: translateY(0); opacity:1 } }
-          @keyframes modalClose { from { transform: translateY(0); opacity:1 } to { transform: translateY(10px); opacity:0 } }
-          .animate-modalOpen { animation: modalOpen .25s ease-out both }
-          .animate-modalClose { animation: modalClose .25s ease-in both }
-        `}
-      </style>
     </div>
   );
 };
